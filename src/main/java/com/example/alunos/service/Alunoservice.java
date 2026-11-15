@@ -7,6 +7,8 @@ import com.example.alunos.entity.Aluno;
 import com.example.alunos.entity.Matricula;
 import com.example.alunos.mapper.Alunomapper;
 import com.example.alunos.repository.AlunoRepository;
+
+import java.time.LocalDate;
 import java.util.List;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,7 @@ public class Alunoservice {
    private final AlunoRepository alunoRepository;
    private final Alunomapper alunomapper;
 
-   public Alunoservice(AlunoRepository alunoRepository, Alunomapper alunomapper) {
+    public Alunoservice(AlunoRepository alunoRepository, Alunomapper alunomapper) {
        this.alunoRepository = alunoRepository;
        this.alunomapper = alunomapper;
 
@@ -32,7 +34,7 @@ public class Alunoservice {
    }
    public List<MatriculaDTO> listarMatriculas(Long id){
        Aluno aluno = alunoRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("aluno nao encontado"));
-       return aluno.getMatriculas().stream().map(m -> new MatriculaDTO(m.getCodigoMatricula(), m.getNomeCurso(),m.getDataInicio())).toList();
+       return aluno.getMatriculas().stream().map(m -> new MatriculaDTO(m.getId(), m.getCodigoMatricula(), m.getNomeCurso(),m.getDataInicio())).toList();
 
    }
    public void remover(Long id){
@@ -60,4 +62,22 @@ public class Alunoservice {
 
 
  }
+    public MatriculaDTO matricular(Long id, MatriculaDTO request) {
+        Aluno aluno = alunoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado"));
+
+        Matricula novaMatricula = new Matricula();
+        novaMatricula.setNomeCurso(request.nomeCurso()); // Pega exatamente do DTO
+
+
+        LocalDate dataInicio = request.dataInicio() != null ? request.dataInicio() : LocalDate.now();
+        novaMatricula.setDataInicio(dataInicio);
+
+
+        aluno.getMatriculas().add(novaMatricula);
+        alunoRepository.save(aluno);
+        // Como o Aluno salva a Matrícula por Cascade, ela ganhará um ID no banco aqui
+
+        return new MatriculaDTO(novaMatricula.getId(), novaMatricula.getCodigoMatricula(), novaMatricula.getNomeCurso(), novaMatricula.getDataInicio());
+    }
 }
